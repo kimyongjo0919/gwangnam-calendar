@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026년 광남고등학교 공유달력</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --border: #e8e5de;
+    --border-soft: #f0ede6;
+    --text: #1a1917;
+    --text-muted: #7c7970;
+    --text-hint: #b0ada5;
+    --accent: #1a3a5c;
+    --accent-light: #e8f0f8;
+    --sunday: #c0392b;
+    --saturday: #1a5276;
+    --today-bg: #1a3a5c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .app-header {
+    background: var(--accent);
+    padding: 0 24px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .logo-wrap { display: flex; flex-direction: column; }
+  .logo-main { font-size: 15px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+  .logo-sub { font-size: 11px; font-weight: 300; color: rgba(255,255,255,0.6); margin-top: 1px; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .author-wrap { display: flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,0.7); }
+  .author-wrap input {
+    border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 5px 10px;
+    font-size: 13px; font-family: inherit; width: 90px;
+    background: rgba(255,255,255,0.15); color: #fff; outline: none;
+  }
+  .author-wrap input::placeholder { color: rgba(255,255,255,0.5); }
+  .author-wrap input:focus { border-color: rgba(255,255,255,0.7); }
+  .btn-add {
+    background: #fff; color: var(--accent); border: none; border-radius: 8px;
+    padding: 8px 16px; font-size: 13px; font-family: inherit; font-weight: 700; cursor: pointer;
+  }
+  .btn-add:hover { opacity: 0.9; }
+
+  .cal-container { max-width: 960px; margin: 24px auto; padding: 0 16px; }
+
+  /* 필터 탭 */
+  .filter-bar {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 16px; align-items: center;
+  }
+  .filter-tab {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 12px; border-radius: 20px; cursor: pointer;
+    font-size: 12px; font-weight: 500; border: 1.5px solid transparent;
+    transition: all 0.15s; user-select: none;
+    background: var(--surface); color: var(--text-muted);
+    border-color: var(--border);
+  }
+  .filter-tab .tab-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .filter-tab.active { color: #fff; border-color: transparent; }
+  .filter-tab.inactive { opacity: 0.45; }
+  .filter-all { font-size: 12px; font-weight: 500; padding: 5px 14px; border-radius: 20px; cursor: pointer; background: var(--accent); color: #fff; border: none; }
+  .filter-manage { font-size: 12px; padding: 5px 10px; border-radius: 20px; cursor: pointer; background: none; color: var(--text-hint); border: 1px dashed var(--border); margin-left: 2px; }
+  .filter-manage:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* 카테고리 관리 모달 */
+  .cat-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; max-height: 260px; overflow-y: auto; }
+  .cat-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border-soft); border-radius: 8px; background: var(--bg); }
+  .cat-swatch { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; cursor: pointer; border: 2px solid transparent; }
+  .cat-swatch:hover { transform: scale(1.1); }
+  .cat-name-input { flex: 1; border: none; background: transparent; font-size: 14px; font-family: inherit; color: var(--text); outline: none; }
+  .cat-name-input:focus { border-bottom: 1px solid var(--accent); }
+  .cat-del { background: none; border: none; color: var(--text-hint); cursor: pointer; font-size: 16px; padding: 0 4px; line-height: 1; }
+  .cat-del:hover { color: #e74c3c; }
+  .btn-add-cat { background: none; border: 1px dashed var(--border); border-radius: 8px; padding: 8px; font-size: 13px; font-family: inherit; color: var(--text-muted); cursor: pointer; width: 100%; }
+  .btn-add-cat:hover { border-color: var(--accent); color: var(--accent); }
+  .color-palette { display: none; flex-wrap: wrap; gap: 6px; padding: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; position: absolute; z-index: 10; box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+  .color-palette.open { display: flex; }
+  .pal-dot { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.1s; }
+  .pal-dot:hover { transform: scale(1.2); border-color: var(--text); }
+
+  .nav-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .month-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .nav-btns { display: flex; gap: 6px; }
+  .nav-btn {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 16px; color: var(--text-muted); font-family: inherit;
+  }
+  .nav-btn.wide { width: auto; padding: 0 12px; font-size: 13px; }
+  .nav-btn:hover { background: var(--border-soft); }
+
+  .day-names { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 6px; }
+  .day-name { text-align: center; font-size: 12px; font-weight: 500; padding: 6px 0; color: var(--text-hint); }
+  .day-name.sun { color: var(--sunday); }
+  .day-name.sat { color: var(--saturday); }
+
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .day-cell {
+    background: var(--surface); border: 1px solid var(--border-soft); border-radius: 10px;
+    min-height: 94px; padding: 6px; cursor: pointer; overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .day-cell:hover { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
+  .day-cell.other-month { background: transparent; border-color: transparent; opacity: 0.35; cursor: default; }
+  .day-cell.other-month:hover { background: transparent; border-color: transparent; box-shadow: none; }
+  .day-num {
+    font-size: 13px; font-weight: 400; width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; margin-bottom: 3px; color: var(--text);
+  }
+  .day-cell.sun .day-num { color: var(--sunday); }
+  .day-cell.sat .day-num { color: var(--saturday); }
+  .day-cell.today .day-num { background: var(--today-bg); color: #fff; font-weight: 700; }
+  .event-pill {
+    font-size: 10.5px; padding: 2px 5px; border-radius: 4px; margin-bottom: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; line-height: 1.5;
+  }
+  .event-pill:hover { filter: brightness(0.93); }  .more-tag { font-size: 10px; color: var(--text-hint); padding: 1px 4px; }
+
+  /* 스피너 */
+  .spinner-wrap {
+    position: fixed; inset: 0; background: rgba(247,246,242,0.7);
+    display: none; align-items: center; justify-content: center; z-index: 300;
+  }
+  .spinner-wrap.on { display: flex; }
+  .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* 토스트 */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #1a1917; color: #fff; padding: 10px 20px; border-radius: 8px;
+    font-size: 13px; opacity: 0; transition: all 0.25s; z-index: 400; pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* 모달 */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(26,25,23,0.45);
+    display: none; align-items: center; justify-content: center; z-index: 200; padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 14px; padding: 24px; width: 100%; max-width: 380px; animation: slideUp 0.2s ease; }
+  @keyframes slideUp { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+  .field { margin-bottom: 14px; }
+  .field label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 5px; font-weight: 500; }
+  .field input, .field textarea {
+    width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px;
+    font-size: 14px; font-family: inherit; outline: none; background: var(--bg); color: var(--text);
+  }
+  .field input:focus, .field textarea:focus { border-color: var(--accent); }
+  .field textarea { height: 70px; resize: none; }
+  .color-row { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+  .color-dot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2.5px solid transparent; transition: transform 0.12s; }
+  .color-dot:hover { transform: scale(1.15); }
+  .color-dot.selected { border-color: var(--text); transform: scale(1.15); }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; align-items: center; }
+  .btn-cancel { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; font-size: 13px; font-family: inherit; cursor: pointer; color: var(--text-muted); }
+  .btn-save { background: var(--accent); border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-family: inherit; font-weight: 700; color: #fff; cursor: pointer; }
+  .btn-delete { background: none; border: 1px solid #e74c3c; border-radius: 8px; padding: 8px 14px; font-size: 13px; font-family: inherit; color: #e74c3c; cursor: pointer; margin-right: auto; }
+
+  .detail-color-bar { width: 40px; height: 4px; border-radius: 2px; margin-bottom: 12px; }
+  .detail-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .detail-meta { font-size: 13px; color: var(--text-muted); margin-bottom: 3px; }
+  .detail-note { font-size: 13px; color: var(--text-muted); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-soft); white-space: pre-wrap; line-height: 1.7; }
+  @media (max-width: 600px) {
+    .cal-container { margin: 12px auto; }
+    .day-cell { min-height: 68px; padding: 4px; }
+    .month-title { font-size: 18px; }
+    .app-header { padding: 0 14px; }
+    .author-wrap span { display: none; }
+    .filter-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="spinner-wrap" id="spinner"><div class="spinner"></div></div>
+<div class="toast" id="toast"></div>
+
+<header class="app-header">
+  <div class="logo-wrap">
+    <div class="logo-main">2026년 광남고등학교 공유달력</div>
+    <div class="logo-sub">Gwangnam High School Shared Calendar</div>
+  </div>
+  <div class="header-right">
+    <div class="author-wrap">
+      <span>이름:</span>
+      <input type="text" id="authorName" placeholder="내 이름" maxlength="10" />
+    </div>
+    <button class="btn-add" id="addBtn">+ 일정 추가</button>
+  </div>
+</header>
+
+<div class="cal-container">
+  <div class="filter-bar" id="filterBar">
+    <button class="filter-all" id="filterAllBtn">전체</button>
+    <!-- 동적 탭은 JS에서 생성 -->
+    <button class="filter-manage" id="filterManageBtn">⚙ 카테고리 관리</button>
+  </div>
+
+  <!-- 색상 팔레트 (floating) -->
+  <div class="color-palette" id="colorPalette"></div>
+
+  <div class="nav-row">
+    <div class="month-title" id="monthTitle"></div>
+    <div class="nav-btns">
+      <button class="nav-btn" id="prevBtn">‹</button>
+      <button class="nav-btn wide" id="todayBtn">오늘</button>
+      <button class="nav-btn" id="nextBtn">›</button>
+    </div>
+  </div>
+  <div class="day-names" id="dayNamesRow"></div>
+  <div class="cal-grid" id="calGrid"></div>
+</div>
+
+<!-- 추가 모달 -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <h3 id="modalHeading">일정 추가</h3>
+    <div class="field"><label>제목 *</label><input type="text" id="evTitle" placeholder="일정 제목" maxlength="40" /></div>
+    <div class="field"><label>날짜 *</label><input type="date" id="evDate" /></div>
+    <div class="field"><label>시간 (선택)</label><input type="text" id="evTime" placeholder="예: 14:00 ~ 16:00" maxlength="30" /></div>
+    <div class="field"><label>메모 (선택)</label><textarea id="evNote" placeholder="내용 입력"></textarea></div>
+    <div class="field"><label>색상</label><div class="color-row" id="colorRow"></div></div>
+    <div class="modal-actions">
+      <button class="btn-delete" id="evDelete" style="display:none;">삭제</button>
+      <button class="btn-cancel" id="modalCancel">취소</button>
+      <button class="btn-save" id="modalSave">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 상세 모달 -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <div class="detail-color-bar" id="detailBar"></div>
+    <div class="detail-title" id="detailTitle"></div>
+    <div class="detail-meta" id="detailDate"></div>
+    <div class="detail-meta" id="detailTime"></div>
+    <div class="detail-meta" id="detailAuthor"></div>
+    <div class="detail-note" id="detailNote"></div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn-delete" id="detailDeleteBtn">삭제</button>
+      <button class="btn-cancel" id="detailEditBtn">수정</button>
+      <button class="btn-save" id="detailClose">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 카테고리 관리 모달 -->
+<div class="modal-overlay" id="catModal">
+  <div class="modal" style="max-width:420px;">
+    <h3>카테고리 관리</h3>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">이름과 색상을 수정하고 저장하세요. 일정 추가 시 이 카테고리들이 색상으로 표시됩니다.</p>
+    <div class="cat-list" id="catList"></div>
+    <button class="btn-add-cat" id="addCatBtn">+ 카테고리 추가</button>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn-cancel" id="catCancel">취소</button>
+      <button class="btn-save" id="catSave">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Apps Script URL (고정) ──
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwPgDmIIvPpuwW-k2d9uwpYZyaHQ0SeS7TJaSbDm7PmGVJwfBFs5o_COpLYMIk4FPCY/exec';
+const LOCAL_KEY = 'gwangnam_cal_events';
+
+const PALETTE = ['#c0392b','#e74c3c','#d35400','#e67e22','#b7950b','#f1c40f',
+  '#2d6a4f','#117a65','#1a5276','#2980b9','#8e44ad','#6c3483',
+  '#784212','#7f8c8d','#2c3e50','#1a3a5c'];
+
+const DEFAULT_CATS = [
+  { id:'cat1', name:'공휴일', color:'#c0392b' },
+  { id:'cat2', name:'시험/평가', color:'#8e44ad' },
+  { id:'cat3', name:'학교행사', color:'#2d6a4f' },
+  { id:'cat4', name:'진로/진학', color:'#1a5276' },
+  { id:'cat5', name:'특별행사', color:'#d35400' },
+  { id:'cat6', name:'창의융합과학부', color:'#117a65' },
+  { id:'cat7', name:'인문국제교육부', color:'#b7950b' },
+  { id:'cat8', name:'보건/기타', color:'#784212' },
+];
+
+let categories = JSON.parse(localStorage.getItem('gwangnam_categories') || 'null') || DEFAULT_CATS;
+let activeFilters = new Set(categories.map(c => c.color));
+let editCatPaletteTarget = null;
+
+let allEventsData = [];
+let currentDate = new Date();
+let selectedColor = categories[0]?.color || '#c0392b';
+let editingId = null;
+let viewingId = null;
+function allEvents() {
+  return allEventsData.filter(e => activeFilters.has(e.color));
+}
+
+function saveCategories() {
+  localStorage.setItem('gwangnam_categories', JSON.stringify(categories));
+}
+
+// ── 팔레트 팝업 ──
+const palette = document.getElementById('colorPalette');
+palette.innerHTML = PALETTE.map(c => `<div class="pal-dot" style="background:${c}" data-c="${c}"></div>`).join('');
+palette.querySelectorAll('.pal-dot').forEach(dot => {
+  dot.addEventListener('click', e => {
+    e.stopPropagation();
+    if (editCatPaletteTarget) {
+      editCatPaletteTarget.style.background = dot.dataset.c;
+      editCatPaletteTarget.dataset.color = dot.dataset.c;
+    }
+    palette.classList.remove('open');
+    editCatPaletteTarget = null;
+  });
+});
+document.addEventListener('click', () => { palette.classList.remove('open'); editCatPaletteTarget = null; });
+
+// ── 필터 탭 렌더링 ──
+function renderFilterBar() {
+  const bar = document.getElementById('filterBar');
+  // 기존 탭들 제거 (전체 버튼, 관리 버튼 제외)
+  bar.querySelectorAll('.filter-tab').forEach(t => t.remove());
+  const manageBtn = document.getElementById('filterManageBtn');
+  categories.forEach(cat => {
+    const isActive = activeFilters.has(cat.color);
+    const tab = document.createElement('div');
+    tab.className = 'filter-tab' + (isActive ? ' active' : ' inactive');
+    tab.dataset.color = cat.color;
+    tab.dataset.catId = cat.id;
+    if (isActive) {
+      tab.style.background = cat.color;
+      tab.style.color = '#fff';
+    } else {
+      tab.style.background = 'var(--surface)';
+      tab.style.color = cat.color;
+      tab.style.borderColor = cat.color;
+    }
+    tab.innerHTML = `<div class="tab-dot" style="background:${isActive ? '#fff' : cat.color}"></div>${cat.name}`;
+    tab.addEventListener('click', () => {
+      const color = tab.dataset.color;
+      if (activeFilters.has(color)) {
+        activeFilters.delete(color);
+        tab.classList.remove('active'); tab.classList.add('inactive');
+        tab.style.background = 'var(--surface)'; tab.style.color = color; tab.style.borderColor = color;
+        tab.querySelector('.tab-dot').style.background = color;
+      } else {
+        activeFilters.add(color);
+        tab.classList.add('active'); tab.classList.remove('inactive');
+        tab.style.background = color; tab.style.color = '#fff'; tab.style.borderColor = 'transparent';
+        tab.querySelector('.tab-dot').style.background = '#fff';
+      }
+      renderCalendar();
+    });
+    bar.insertBefore(tab, manageBtn);
+  });
+}
+
+document.getElementById('filterAllBtn').addEventListener('click', () => {
+  activeFilters = new Set(categories.map(c => c.color));
+  renderFilterBar();
+  renderCalendar();
+});
+
+// ── 카테고리 관리 모달 ──
+let tempCats = [];
+
+function openCatModal() {
+  tempCats = categories.map(c => ({ ...c }));
+  renderCatList();
+  document.getElementById('catModal').classList.add('open');
+}
+
+function renderCatList() {
+  const list = document.getElementById('catList');
+  list.innerHTML = '';
+  tempCats.forEach((cat, idx) => {
+    const row = document.createElement('div');
+    row.className = 'cat-item';
+    row.innerHTML = `
+      <div class="cat-swatch" style="background:${cat.color}" data-idx="${idx}" data-color="${cat.color}" title="색상 변경"></div>
+      <input class="cat-name-input" type="text" value="${cat.name}" maxlength="20" data-idx="${idx}" placeholder="카테고리 이름" />
+      <button class="cat-del" data-idx="${idx}" title="삭제">×</button>
+    `;
+    list.appendChild(row);
+  });
+  // 색상 스와치 클릭
+  list.querySelectorAll('.cat-swatch').forEach(sw => {
+    sw.addEventListener('click', e => {
+      e.stopPropagation();
+      editCatPaletteTarget = sw;
+      const rect = sw.getBoundingClientRect();
+      palette.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+      palette.style.left = (rect.left + window.scrollX) + 'px';
+      palette.classList.add('open');
+    });
+  });
+  // 이름 변경
+  list.querySelectorAll('.cat-name-input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      tempCats[inp.dataset.idx].name = inp.value;
+    });
+  });
+  // 삭제
+  list.querySelectorAll('.cat-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      tempCats.splice(Number(btn.dataset.idx), 1);
+      renderCatList();
+    });
+  });
+}
+
+document.getElementById('addCatBtn').addEventListener('click', () => {
+  const usedColors = tempCats.map(c => c.color);
+  const nextColor = PALETTE.find(c => !usedColors.includes(c)) || PALETTE[tempCats.length % PALETTE.length];
+  tempCats.push({ id: 'cat_' + Date.now(), name: '새 카테고리', color: nextColor });
+  renderCatList();
+});
+
+document.getElementById('filterManageBtn').addEventListener('click', openCatModal);
+document.getElementById('catCancel').addEventListener('click', () => document.getElementById('catModal').classList.remove('open'));
+document.getElementById('catModal').addEventListener('click', e => { if (e.target.id === 'catModal') document.getElementById('catModal').classList.remove('open'); });
+
+document.getElementById('catSave').addEventListener('click', () => {
+  // 팔레트에서 변경된 색상 반영
+  document.getElementById('catList').querySelectorAll('.cat-swatch').forEach(sw => {
+    tempCats[sw.dataset.idx].color = sw.dataset.color;
+  });
+  categories = tempCats.map(c => ({ ...c }));
+  activeFilters = new Set(categories.map(c => c.color));
+  saveCategories();
+  renderFilterBar();
+  renderCalendar();
+  document.getElementById('catModal').classList.remove('open');
+  showToast('카테고리가 저장됐어요!');
+});
+
+// 일정 추가 색상 피커를 카테고리 기반으로
+function buildColorPicker(sel) {
+  document.getElementById('colorRow').innerHTML = categories.map(c =>
+    `<div class="color-dot${c.color===sel?' selected':''}" style="background:${c.color}" data-c="${c.color}" title="${c.name}"></div>`
+  ).join('');
+  document.getElementById('colorRow').querySelectorAll('.color-dot').forEach(dot => {
+    dot.addEventListener('click', () => {
+      selectedColor = dot.dataset.c;
+      document.getElementById('colorRow').querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+      dot.classList.add('selected');
+    });
+  });
+}
+
+async function loadAllEvents() {
+  showSpinner(true);
+  try {
+    const res = await fetch(SCRIPT_URL);
+    const data = await res.json();
+    if (data && data.events) {
+      allEventsData = data.events;
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(allEventsData));
+    }
+  } catch(e) {
+    const cached = localStorage.getItem(LOCAL_KEY);
+    allEventsData = cached ? JSON.parse(cached) : [];
+  }
+  showSpinner(false);
+  renderCalendar();
+}
+
+async function apiFetch(body) {
+  try {
+    showSpinner(true);
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(body)
+    });
+  } catch(e) { showToast('저장 중 오류가 발생했어요.'); }
+  finally { showSpinner(false); }
+}
+
+// ── 달력 렌더링 ──
+function renderDayNames() {
+  document.getElementById('dayNamesRow').innerHTML =
+    ['일','월','화','수','목','금','토'].map((d,i) =>
+      `<div class="day-name ${i===0?'sun':i===6?'sat':''}">${d}</div>`
+    ).join('');
+}
+
+function renderCalendar() {
+  const y = currentDate.getFullYear(), m = currentDate.getMonth();
+  document.getElementById('monthTitle').textContent = `${y}년 ${m+1}월`;
+  const today = new Date();
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const prevDays = new Date(y, m, 0).getDate();
+  const cells = [];
+
+  for (let i=0;i<firstDay;i++) cells.push({day:prevDays-firstDay+1+i,month:m===0?11:m-1,year:m===0?y-1:y,other:true});
+  for (let d=1;d<=daysInMonth;d++) cells.push({day:d,month:m,year:y,other:false});
+  while (cells.length<42) { const d=cells.length-firstDay-daysInMonth+1; cells.push({day:d,month:m===11?0:m+1,year:m===11?y+1:y,other:true}); }
+
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  const evs = allEvents();
+
+  cells.forEach((cell, idx) => {
+    const dateStr = `${cell.year}-${String(cell.month+1).padStart(2,'0')}-${String(cell.day).padStart(2,'0')}`;
+    const isToday = !cell.other && cell.day===today.getDate() && cell.month===today.getMonth() && cell.year===today.getFullYear();
+    const isSun = idx%7===0, isSat = idx%7===6;
+    const cellEvs = evs.filter(e => e.date === dateStr);
+
+    const div = document.createElement('div');
+    div.className = ['day-cell',cell.other?'other-month':'',isToday?'today':'',isSun?'sun':'',isSat?'sat':''].join(' ').trim();
+
+    let html = `<div class="day-num">${cell.day}</div>`;
+    cellEvs.slice(0,3).forEach(ev => {
+      html += `<div class="event-pill" style="background:${ev.color}22;color:${ev.color};border:1px solid ${ev.color}44;" data-evid="${ev.id}">${ev.title}</div>`;
+    });
+    if (cellEvs.length > 3) html += `<div class="more-tag">+${cellEvs.length-3}개</div>`;
+    div.innerHTML = html;
+
+    div.addEventListener('click', e => {
+      const pill = e.target.closest('.event-pill');
+      if (pill) { openDetail(pill.dataset.evid); return; }
+      if (!cell.other) openAdd(dateStr);
+    });
+    grid.appendChild(div);
+  });
+}
+
+function openAdd(dateStr) {
+  editingId = null;
+  document.getElementById('modalHeading').textContent = '일정 추가';
+  document.getElementById('evTitle').value = '';
+  document.getElementById('evDate').value = dateStr || formatDate(new Date());
+  document.getElementById('evTime').value = '';
+  document.getElementById('evNote').value = '';
+  document.getElementById('evDelete').style.display = 'none';
+  selectedColor = categories[0]?.color || '#c0392b';
+  buildColorPicker(selectedColor);
+  document.getElementById('addModal').classList.add('open');
+  setTimeout(() => document.getElementById('evTitle').focus(), 100);
+}
+
+function openEdit(id) {
+  const ev = allEventsData.find(e => e.id === id);
+  if (!ev) return;
+  editingId = id;
+  document.getElementById('modalHeading').textContent = '일정 수정';
+  document.getElementById('evTitle').value = ev.title;
+  document.getElementById('evDate').value = ev.date;
+  document.getElementById('evTime').value = ev.time || '';
+  document.getElementById('evNote').value = ev.note || '';
+  document.getElementById('evDelete').style.display = 'inline-block';
+  selectedColor = ev.color || COLORS[0];
+  buildColorPicker(selectedColor);
+  document.getElementById('detailModal').classList.remove('open');
+  document.getElementById('addModal').classList.add('open');
+}
+
+function openDetail(id) {
+  const ev = allEvents().find(e => e.id === id);
+  if (!ev) return;
+  viewingId = id;
+  document.getElementById('detailBar').style.background = ev.color;
+  document.getElementById('detailTitle').textContent = ev.title;
+  document.getElementById('detailDate').textContent = '📅 ' + ev.date;
+  document.getElementById('detailTime').textContent = ev.time ? '⏰ ' + ev.time : '';
+  document.getElementById('detailAuthor').textContent = ev.author ? '👤 ' + ev.author : '';
+  const noteEl = document.getElementById('detailNote');
+  if (ev.note) { noteEl.textContent = ev.note; noteEl.style.display = 'block'; }
+  else noteEl.style.display = 'none';
+  document.getElementById('detailDeleteBtn').style.display = 'inline-block';
+  document.getElementById('detailEditBtn').style.display = 'inline-block';
+  document.getElementById('detailModal').classList.add('open');
+}
+
+// ── 이벤트 핸들러 ──
+document.getElementById('addBtn').addEventListener('click', () => openAdd(''));
+document.getElementById('prevBtn').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth()-1); renderCalendar(); });
+document.getElementById('nextBtn').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth()+1); renderCalendar(); });
+document.getElementById('todayBtn').addEventListener('click', () => { currentDate = new Date(); renderCalendar(); });
+document.getElementById('modalCancel').addEventListener('click', () => document.getElementById('addModal').classList.remove('open'));
+document.getElementById('addModal').addEventListener('click', e => { if (e.target.id==='addModal') document.getElementById('addModal').classList.remove('open'); });
+
+document.getElementById('modalSave').addEventListener('click', async () => {
+  const title = document.getElementById('evTitle').value.trim();
+  const date = document.getElementById('evDate').value;
+  if (!title) { showToast('제목을 입력해주세요.'); return; }
+  if (!date) { showToast('날짜를 선택해주세요.'); return; }
+  const author = document.getElementById('authorName').value.trim() || '익명';
+  const ev = {
+    id: editingId || (Date.now().toString(36) + Math.random().toString(36).slice(2)),
+    title, date,
+    time: document.getElementById('evTime').value.trim(),
+    note: document.getElementById('evNote').value.trim(),
+    color: selectedColor, author,
+    type: 'shared',
+    createdAt: new Date().toISOString()
+  };
+  document.getElementById('addModal').classList.remove('open');
+  if (editingId) {
+    allEventsData = allEventsData.map(e => e.id === editingId ? ev : e);
+    await apiFetch({ action: 'update', event: ev });
+  } else {
+    allEventsData.push(ev);
+    await apiFetch({ action: 'add', event: ev });
+  }
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(allEventsData));
+  showToast('저장됐어요!');
+  renderCalendar();
+});
+
+document.getElementById('evDelete').addEventListener('click', async () => {
+  if (!editingId || !confirm('이 일정을 삭제할까요?')) return;
+  allEventsData = allEventsData.filter(e => e.id !== editingId);
+  await apiFetch({ action: 'delete', id: editingId });
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(allEventsData));
+  document.getElementById('addModal').classList.remove('open');
+  showToast('삭제됐어요.');
+  renderCalendar();
+});
+
+document.getElementById('detailClose').addEventListener('click', () => document.getElementById('detailModal').classList.remove('open'));
+document.getElementById('detailModal').addEventListener('click', e => { if (e.target.id==='detailModal') document.getElementById('detailModal').classList.remove('open'); });
+document.getElementById('detailEditBtn').addEventListener('click', () => { if (viewingId) openEdit(viewingId); });
+document.getElementById('detailDeleteBtn').addEventListener('click', async () => {
+  if (!viewingId) return;
+  if (!confirm('이 일정을 삭제할까요?')) return;
+  allEventsData = allEventsData.filter(e => String(e.id) !== String(viewingId));
+  await apiFetch({ action: 'delete', id: viewingId });
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(allEventsData));
+  document.getElementById('detailModal').classList.remove('open');
+  showToast('삭제됐어요.');
+  renderCalendar();
+});
+
+function showSpinner(on) { document.getElementById('spinner').classList.toggle('on', on); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+function formatDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+renderDayNames();
+renderFilterBar();
+loadAllEvents();
+</script>
+</body>
+</html>
